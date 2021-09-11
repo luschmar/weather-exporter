@@ -37,6 +37,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: 
-            - luschmar/weather-exporter:${{ steps.get_version.outputs.VERSION }}
-            - luschmar/weather-exporter:latest
+          tags: luschmar/weather-exporter:${{ steps.get_version.outputs.VERSION }},luschmar/weather-exporter:latest
