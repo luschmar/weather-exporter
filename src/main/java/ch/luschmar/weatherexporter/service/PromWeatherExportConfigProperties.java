@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 public class PromWeatherExportConfigProperties {
 	private List<String> gauges;
 	private List<String> counters;
+	private List<CorrectionProperty> corrections;
 	
 	public List<String> getGauges() {
 		return gauges;
@@ -23,4 +24,12 @@ public class PromWeatherExportConfigProperties {
 	public void setCounters(List<String> counters) {
 		this.counters = counters;
 	}
+	public List<CorrectionProperty> getCorrections() {
+		return corrections;
+	}
+	public void setCorrections(List<CorrectionProperty> corrections) {
+		this.corrections = corrections;
+	}
+	
+	
 }

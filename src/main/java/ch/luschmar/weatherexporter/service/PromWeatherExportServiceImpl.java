@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ public class PromWeatherExportServiceImpl implements PromWeatherExportService {
 	private final Map<String, Gauge> gauges = new HashMap<>();
 	private final Map<String, Counter> counters = new HashMap<>();
 	private final Map<String, Info> infos = new HashMap<>();
+	private final Map<String, Double> corrections;
 	private final CollectorRegistry collectorRegistry;
 
 	@Autowired
@@ -27,6 +29,8 @@ public class PromWeatherExportServiceImpl implements PromWeatherExportService {
 		this.collectorRegistry = collectorRegistry;
 		properties.getGauges().stream().forEach(p -> createAndRegisterGauge(p));
 		properties.getCounters().stream().forEach(p -> counters.put(p, createAndRegisterCounter(p)));
+		
+		corrections = properties.getCorrections().stream().collect(Collectors.toMap(CorrectionProperty::getName, CorrectionProperty::getValue));
 	}
 
 	private void createAndRegisterGauge(String name) {
@@ -76,31 +80,31 @@ public class PromWeatherExportServiceImpl implements PromWeatherExportService {
 		dataParameter.entrySet().forEach(kv -> {
 			var name = kv.getKey();
 			if(isTempName(name)) {
-				var doubleValue = Double.valueOf(kv.getValue());
+				var doubleValue = processCorrection(name, Double.valueOf(kv.getValue()));
 				var nameWithoutUnit = tempNameWithoutUnit(name);
 				gauges.get(nameWithoutUnit+"_fahrenheit").set(doubleValue);
 				gauges.get(nameWithoutUnit+"_celsius").set(calculateFahrenheitToCelcius(doubleValue));
 			} else if(isPressureName(name)) {
-				var doubleValue = Double.valueOf(kv.getValue());
+				var doubleValue = processCorrection(name, Double.valueOf(kv.getValue()));
 				var nameWithoutUnit = pressureNameWithoutUnit(name);
 				gauges.get(nameWithoutUnit+"_inhg").set(doubleValue);
 				gauges.get(nameWithoutUnit+"_hpa").set(calculateInhgToHpa(doubleValue));
 			} else if(isSpeedName(name)) {
-				var doubleValue = Double.valueOf(kv.getValue());
+				var doubleValue = processCorrection(name, Double.valueOf(kv.getValue()));
 				var nameWithoutUnit = speedNameWithoutUnit(name);
 				gauges.get(nameWithoutUnit+"_mph").set(doubleValue);
 				gauges.get(nameWithoutUnit+"_kmh").set(calculateMphToKmh(doubleValue));
 			} else if(isRainInName(name)) {
-				var doubleValue = Double.valueOf(kv.getValue());
+				var doubleValue = processCorrection(name, Double.valueOf(kv.getValue()));
 				var nameWithoutUnit = rainInNameWithoutUnit(name);
 				gauges.get(nameWithoutUnit+"_inch").set(doubleValue);
 				gauges.get(nameWithoutUnit+"_mm").set(calculateInchToMm(doubleValue));
 			} else {
 				if(gauges.containsKey(name)) {
-					var doubleValue = Double.valueOf(kv.getValue());
+					var doubleValue = processCorrection(name, Double.valueOf(kv.getValue()));
 					gauges.get(name).set(doubleValue);
 				} else if(counters.containsKey(name)) {
-					var doubleValue = Double.valueOf(kv.getValue());
+					var doubleValue = processCorrection(name, Double.valueOf(kv.getValue()));
 					counters.get(name).inc(doubleValue);
 				} else if(infos.containsKey(name)) {
 					infos.get(name).info(name, kv.getValue());
@@ -110,6 +114,13 @@ public class PromWeatherExportServiceImpl implements PromWeatherExportService {
 				}
 			}
 		});
+	}
+
+	private Double processCorrection(String name, Double valueOf) {
+		if(corrections.containsKey(name)) {
+			return Double.sum(valueOf, corrections.get(name));
+		}
+		return valueOf;
 	}
 
 	private boolean isTempName(String name) {
