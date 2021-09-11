@@ -123,6 +123,10 @@ public class PromWeatherExportServiceImpl implements PromWeatherExportService {
 			{
 				correctedValue = Double.sum(correctedValue, 360);
 			}
+			if("winddir".equals(name) && correctedValue > 360)
+			{
+				correctedValue = Double.sum(correctedValue, -360);
+			}
 			return correctedValue;
 		}
 		return valueOf;
