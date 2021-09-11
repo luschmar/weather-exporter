@@ -8,9 +8,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "prom")
 public class PromWeatherExportConfigProperties {
-	private List<String> gauges;
-	private List<String> counters;
-	private List<CorrectionProperty> corrections;
+	private List<String> gauges = List.of();
+	private List<String> counters = List.of();
+	private List<CorrectionProperty> corrections = List.of();
 	
 	public List<String> getGauges() {
 		return gauges;
