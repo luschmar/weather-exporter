@@ -118,7 +118,12 @@ public class PromWeatherExportServiceImpl implements PromWeatherExportService {
 
 	private Double processCorrection(String name, Double valueOf) {
 		if(corrections.containsKey(name)) {
-			return Double.sum(valueOf, corrections.get(name));
+			var correctedValue = Double.sum(valueOf, corrections.get(name));
+			if("winddir".equals(name) && correctedValue < 0)
+			{
+				correctedValue = Double.sum(correctedValue, 360);
+			}
+			return correctedValue;
 		}
 		return valueOf;
 	}
